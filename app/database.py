@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
 # Load constants (assuming constants.py is created in the root or accessible)
-from .constants import DATABASE_URL
+from app.constants import DATABASE_URL
 
 # --- 1. BASE DECLARATION AND ENGINE SETUP ---
 Base = declarative_base()
