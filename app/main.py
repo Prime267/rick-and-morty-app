@@ -4,17 +4,16 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from tenacity import retry, stop_after_attempt, wait_exponential
-from sqlalchemy import or_ # CRITICAL: Add or_ for database filtering
+from sqlalchemy import or_  # CRITICAL: Add or_ for database filtering
 
-# Import necessary local modules (KEEPING RELATIVE IMPORTS AS REQUESTED)
+# Import necessary local modules with absolute imports
 from app import constants, database, metrics_setup 
-from app.database import Character # CRITICAL: Import the Character model for ORM operations
+from app.database import Character  # CRITICAL: Import the Character model for ORM operations
 
 # --- 1. INITIALIZATION and SRE MIDDLEWARE ---
 app = FastAPI(title="Rick & Morty SRE App")
 
 # 1.1. SRE: Initialize Prometheus Metrics and Middleware
-# This call adds the /metrics endpoint and the latency/error measuring middleware
 metrics_setup.setup_metrics(app)
 
 # Global Exception Handler (e.g., for unexpected 500 errors)
@@ -121,11 +120,12 @@ def ingest_all_characters(db: Session):
                 db.commit()
                 processed_count += 1
 
-
         next_url = data['info'].get('next')
 
     # Update the business metric (critical for the Bonus section)
     metrics_setup.PROCESSED_CHARACTERS.set(processed_count)
+    
+    return processed_count  # Return count for API response
 
 
 # --- 5. MAIN API ENDPOINT (/characters) ---
@@ -169,7 +169,16 @@ async def get_characters(
     # Return filtered and sorted data in JSON format
     return characters
 
-# --- 6. STARTUP EVENT ---
+
+# --- 6. DATA SYNC ENDPOINT ---
+@app.post("/sync")
+async def sync_data(db: Session = Depends(database.get_db)):
+    """Sync data from Rick and Morty API to database"""
+    characters_count = ingest_all_characters(db)
+    return {"message": f"Data synced successfully: {characters_count} characters processed"}
+
+
+# --- 7. STARTUP EVENT ---
 @app.on_event("startup")
 def startup_event():
     # Initialize the database table structure
