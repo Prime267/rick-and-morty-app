@@ -6,7 +6,7 @@ from starlette.responses import JSONResponse
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 # Import necessary local modules
-from . import constants, database, metrics_setup
+from app import constants, database, metrics_setup
 
 # --- 1. INITIALIZATION and SRE MIDDLEWARE ---
 app = FastAPI(title="Rick & Morty SRE App")
