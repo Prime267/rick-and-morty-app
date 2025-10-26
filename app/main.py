@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from tenacity import retry, stop_after_attempt, wait_exponential
+from sqlalchemy import or_ # CRITICAL: Add or_ for database filtering
 
-# Import necessary local modules
-from app import constants, database, metrics_setup
+# Import necessary local modules (KEEPING RELATIVE IMPORTS AS REQUESTED)
+from app import constants, database, metrics_setup 
+from app.database import Character # CRITICAL: Import the Character model for ORM operations
 
 # --- 1. INITIALIZATION and SRE MIDDLEWARE ---
 app = FastAPI(title="Rick & Morty SRE App")
@@ -67,7 +69,7 @@ def resilient_request(url: str) -> dict:
     return response.json()
 
 
-# --- 4. DATA INGESTION JOB (Logic covering Pagination) ---
+# --- 4. DATA INGESTION JOB (Logic covering Pagination and Persistence) ---
 
 def ingest_all_characters(db: Session):
     """
@@ -92,9 +94,32 @@ def ingest_all_characters(db: Session):
                 char_data['status'] == constants.EXTERNAL_FILTERS['status'] and
                 is_earth):
 
-                 # --- ORM Logic to save/update data in DB ---
-                 # (Minimal ORM interaction goes here)
-                 processed_count += 1
+                # --- ORM Logic (Upsert) to save/update data in DB ---
+                
+                # 1. Check if the character already exists
+                existing_char = db.query(Character).filter(Character.id == char_data['id']).first()
+
+                if existing_char:
+                    # 2. Update existing character (minimal update logic)
+                    existing_char.name = char_data['name']
+                    existing_char.status = char_data['status']
+                    existing_char.origin_name = char_data['origin']['name']
+                    existing_char.is_earth_origin = is_earth
+                else:
+                    # 3. Create a new character
+                    new_char = Character(
+                        id=char_data['id'],
+                        name=char_data['name'],
+                        species=char_data['species'],
+                        status=char_data['status'],
+                        origin_name=char_data['origin']['name'],
+                        is_earth_origin=is_earth
+                    )
+                    db.add(new_char)
+
+                # Commit changes for this character
+                db.commit()
+                processed_count += 1
 
 
         next_url = data['info'].get('next')
@@ -124,8 +149,22 @@ async def get_characters(
         raise HTTPException(status_code=400, detail=detail_msg)
 
     # --- Logic to read characters from DB with sorting ---
-    # The actual query logic using SQLAlchemy (SQLAlchemy logic goes here)
-    characters = db.query(database.Character).all()
+    
+    # Base query filters for Human, Alive, and Earth origin (using SRE efficiency flag)
+    query = db.query(Character).filter(
+        Character.species == constants.EXTERNAL_FILTERS['species'],
+        Character.status == constants.EXTERNAL_FILTERS['status'],
+        # Using the is_earth_origin flag for efficient filtering
+        Character.is_earth_origin == True 
+    )
+
+    # Apply sorting logic
+    if sort_by == 'name':
+        query = query.order_by(Character.name)
+    elif sort_by == 'id':
+        query = query.order_by(Character.id)
+
+    characters = query.all()
 
     # Return filtered and sorted data in JSON format
     return characters
