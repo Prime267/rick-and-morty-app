@@ -5,3 +5,4 @@ psycopg2-binary   # PostgreSQL driver
 requests
 tenacity          # for SRE Retry Logic
 prometheus_client # for SRE Metrics
+ruff

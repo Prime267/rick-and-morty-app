@@ -1,10 +1,9 @@
-import os
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import Boolean, Column, Integer, String, create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, sessionmaker
 
 # Load constants (assuming constants.py is created in the root or accessible)
-from .constants import DATABASE_URL 
+from .constants import DATABASE_URL
 
 # --- 1. BASE DECLARATION AND ENGINE SETUP ---
 Base = declarative_base()
@@ -28,21 +27,21 @@ class Character(Base):
     species = Column(String)
     status = Column(String)
     origin_name = Column(String)
-    is_earth_origin = Column(Boolean) # Flag to simplify filtering logic (SRE efficiency)
+    is_earth_origin = Column(Boolean) # Flag to simplify filtring logic (SRE efficiency)
 
 
 # --- 3. SRE HELPER FUNCTIONS ---
 
 def check_db_connection() -> bool:
     """
-    Checks for an active database connection. 
+    Checks for an active database connection.
     This is CRITICAL for the /healthcheck endpoint and the K8s Readiness Probe.
     """
     try:
         # Attempt a simple query execution to confirm the DB is responsive
         db: Session = SessionLocal()
         # Using text() ensures compatibility with raw SQL execution
-        db.execute(text("SELECT 1")) 
+        db.execute(text("SELECT 1"))
         db.close()
         return True
     except Exception as e:
