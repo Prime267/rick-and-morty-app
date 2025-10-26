@@ -1,10 +1,9 @@
-import os
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import Boolean, Column, Integer, String, create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, sessionmaker
 
 # Load constants (assuming constants.py is created in the root or accessible)
-from .constants import DATABASE_URL 
+from .constants import DATABASE_URL
 
 # --- 1. BASE DECLARATION AND ENGINE SETUP ---
 Base = declarative_base()
@@ -42,7 +41,7 @@ def check_db_connection() -> bool:
         # Attempt a simple query execution to confirm the DB is responsive
         db: Session = SessionLocal()
         # Using text() ensures compatibility with raw SQL execution
-        db.execute(text("SELECT 1")) 
+        db.execute(text("SELECT 1"))
         db.close()
         return True
     except Exception as e:

@@ -1,27 +1,27 @@
-from fastapi import FastAPI, Depends, Query, HTTPException
+import requests
+from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-import requests
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 # Import necessary local modules
-from . import database, metrics_setup, constants 
+from . import constants, database, metrics_setup
 
 # --- 1. INITIALIZATION and SRE MIDDLEWARE ---
 app = FastAPI(title="Rick & Morty SRE App")
 
 # 1.1. SRE: Initialize Prometheus Metrics and Middleware
 # This call adds the /metrics endpoint and the latency/error measuring middleware
-metrics_setup.setup_metrics(app) 
+metrics_setup.setup_metrics(app)
 
 # Global Exception Handler (e.g., for unexpected 500 errors)
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
     # CRITICAL: Increment the global 500 error counter for observability
     metrics_setup.HTTP_ERRORS_TOTAL.labels(
-        method=request.method, 
-        endpoint=request.url.path, 
+        method=request.method,
+        endpoint=request.url.path,
         status_code=500
     ).inc()
     print(f"Unhandled error: {exc}")
@@ -40,7 +40,7 @@ async def deep_health_check():
         # Returns 503, preventing K8s from sending traffic to this Pod
         # (This links directly to the K8s Probe configuration)
         raise HTTPException(status_code=503, detail="Database Connection Failed")
-    
+
     # If caching (Redis) was used, check its status here as well.
     return {"status": "OK", "db_status": "Healthy"}
 
@@ -54,12 +54,12 @@ def resilient_request(url: str) -> dict:
     """
     # Note: Filters are added here via constants
     response = requests.get(url, params=constants.EXTERNAL_FILTERS, timeout=10)
-    
+
     # If the external API hits a Rate Limit (429) or Server Error (5xx), we retry
     if response.status_code >= 429:
         # Tenacity will catch this Exception and automatically retry the attempt
         raise Exception(f"External API failed with status {response.status_code}. Retrying...")
-    
+
     response.raise_for_status() # Raise exception for other non-retriable 4xx errors
     return response.json()
 
@@ -73,26 +73,26 @@ def ingest_all_characters(db: Session):
     """
     next_url = constants.EXTERNAL_API_URL
     processed_count = 0
-    
+
     while next_url:
         data = resilient_request(next_url)
-        
+
         # --- Minimal Filtering Logic (as per task requirements) ---
         earth_origins = ["Earth (C-137)", "Earth (Replacement Dimension)"]
-        
+
         for char_data in data.get('results', []):
             is_earth = char_data['origin']['name'].startswith('Earth') or char_data['origin']['name'] in earth_origins
-            
+
             # Persist data ONLY if it meets all the specific requirements
-            if (char_data['species'] == constants.EXTERNAL_FILTERS['species'] and 
+            if (char_data['species'] == constants.EXTERNAL_FILTERS['species'] and
                 char_data['status'] == constants.EXTERNAL_FILTERS['status'] and
                 is_earth):
-                 
+
                  # --- ORM Logic to save/update data in DB ---
                  # (Minimal ORM interaction goes here)
                  processed_count += 1
-                 
-        
+
+
         next_url = data['info'].get('next')
 
     # Update the business metric (critical for the Bonus section)
@@ -110,8 +110,8 @@ async def get_characters(
     if sort_by and sort_by not in ["name", "id"]:
         # Increment 400 error metric before raising exception
         metrics_setup.HTTP_ERRORS_TOTAL.labels(
-            method="GET", 
-            endpoint="/api/v1/characters", 
+            method="GET",
+            endpoint="/api/v1/characters",
             status_code=400
         ).inc()
         raise HTTPException(status_code=400, detail="Invalid sort_by parameter. Use 'name' or 'id'.")
@@ -119,9 +119,9 @@ async def get_characters(
     # --- Logic to read characters from DB with sorting ---
     # The actual query logic using SQLAlchemy (SQLAlchemy logic goes here)
     characters = db.query(database.Character).all()
-    
+
     # Return filtered and sorted data in JSON format
-    return characters 
+    return characters
 
 # --- 6. STARTUP EVENT ---
 @app.on_event("startup")
