@@ -1,0 +1,20 @@
+{{- if .Values.logging.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "rick-and-morty-api.fullname" . }}-fluent-bit-config
+  labels:
+    {{- include "rick-and-morty-api.labels" . | nindent 4 }}
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush        5
+        Daemon       Off
+        Log_Level    info
+
+    # Application log input
+    {{ .Values.logging.config.inputs | indent 4 }}
+
+    # Output configurations
+    {{ .Values.logging.config.outputs | indent 4 }}
+{{- end }}
