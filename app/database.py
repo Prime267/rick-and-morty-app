@@ -27,14 +27,14 @@ class Character(Base):
     species = Column(String)
     status = Column(String)
     origin_name = Column(String)
-    is_earth_origin = Column(Boolean) # Flag to simplify filtering logic (SRE efficiency)
+    is_earth_origin = Column(Boolean) # Flag to simplify filtring logic (SRE efficiency)
 
 
 # --- 3. SRE HELPER FUNCTIONS ---
 
 def check_db_connection() -> bool:
     """
-    Checks for an active database connection. 
+    Checks for an active database connection.
     This is CRITICAL for the /healthcheck endpoint and the K8s Readiness Probe.
     """
     try:

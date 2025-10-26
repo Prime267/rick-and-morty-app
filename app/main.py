@@ -58,7 +58,10 @@ def resilient_request(url: str) -> dict:
     # If the external API hits a Rate Limit (429) or Server Error (5xx), we retry
     if response.status_code >= 429:
         # Tenacity will catch this Exception and automatically retry the attempt
-        raise Exception(f"External API failed with status {response.status_code}. Retrying...")
+        # Create the error message first
+        err_msg = f"External API failed with status {response.status_code}. Retrying..."
+        # Now raise the exception with the shorter variable name
+        raise Exception(err_msg)
 
     response.raise_for_status() # Raise exception for other non-retriable 4xx errors
     return response.json()
@@ -81,7 +84,8 @@ def ingest_all_characters(db: Session):
         earth_origins = ["Earth (C-137)", "Earth (Replacement Dimension)"]
 
         for char_data in data.get('results', []):
-            is_earth = char_data['origin']['name'].startswith('Earth') or char_data['origin']['name'] in earth_origins
+            is_earth = (char_data['origin']['name'].startswith('Earth') or
+                        char_data['origin']['name'] in earth_origins)
 
             # Persist data ONLY if it meets all the specific requirements
             if (char_data['species'] == constants.EXTERNAL_FILTERS['species'] and
@@ -114,7 +118,10 @@ async def get_characters(
             endpoint="/api/v1/characters",
             status_code=400
         ).inc()
-        raise HTTPException(status_code=400, detail="Invalid sort_by parameter. Use 'name' or 'id'.")
+        # Define the detail message separately
+        detail_msg = "Invalid sort_by parameter. Use 'name' or 'id'."
+        # Raise the exception using the variable
+        raise HTTPException(status_code=400, detail=detail_msg)
 
     # --- Logic to read characters from DB with sorting ---
     # The actual query logic using SQLAlchemy (SQLAlchemy logic goes here)
@@ -128,5 +135,7 @@ async def get_characters(
 def startup_event():
     # Initialize the database table structure
     database.init_db()
-    # In a real environment, ingestion would run as a separate CronJob/Task or on a timer.
-    # For a simple demo, we could call ingest_all_characters here, but it's risky for K8s startup time.
+    # In a real environment, ingestion would run as a separate
+    # CronJob/Task or on a timer.
+    # For a simple demo, we could call ingest_all_characters here
+    # but it's risky for K8s startup time.
