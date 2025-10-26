@@ -1,0 +1,116 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+pip-wheel-metadata/
+pip-wheel-metadata/
+build/
+develop-eggs/
+dist/
+eggs/
+.eggs/
+*.egg-info/
+.installed.cfg
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg
+.python-version
+.pytest_cache/
+.coverage
+.coverage.*
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pyright/
+profile_default/
+ipynb_checkpoints/
+*.ipynb
+.env
+.env.*
+
+
+# Terraform
+**/.terraform/*
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+terraform.tfvars
+*.tfvars
+.terraformrc
+terraform.rc
+terraform.tfplan
+*.tfplan
+
+
+# Helm
+# ignore packaged charts, chart cache and local repos
+charts/*.tgz
+charts/*.tgz.sig
+charts/*.prov
+helm-packaging/
+.helm/
+.helmignore
+helmfile.yaml.lock
+helmfile.d/*-lock.yaml
+values.secret.yaml
+secrets.yaml
+secrets-*.yaml
+
+
+# Editor & IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+*.sqlite3
+
+# Containers
+docker-compose.override.yml
+.envrc
+
+# Keys, credentials & sensitive files
+*.pem
+*.key
+*.crt
+credentials
+credentials.json
+secret-*.yaml
+
+# Misc
+node_modules/
+dist/
+build/
