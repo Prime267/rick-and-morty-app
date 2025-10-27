@@ -33,11 +33,6 @@ variable "max_nodes" {
   type        = number
 }
 
-variable "vpc_id" {
-  description = "The ID of the VPC to use"
-  type        = string
-}
-
 variable "tags" {
   description = "Tags to apply to the cluster"
   type        = list(string)

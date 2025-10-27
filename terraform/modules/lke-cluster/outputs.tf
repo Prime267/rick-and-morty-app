@@ -23,3 +23,13 @@ output "kubeconfig_path" {
   description = "Path to the kubeconfig file"
   value       = local_file.kubeconfig.filename
 }
+
+# New output to get node IPs
+# output "node_ips" {
+#   description = "External IP addresses of Kubernetes nodes"
+#   value       = flatten([
+#     for pool in linode_lke_cluster.rick_morty_cluster.pool : [
+#       for node in pool.nodes : node.ipv4
+#     ]
+#   ])
+# }

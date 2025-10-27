@@ -20,15 +20,12 @@ provider "linode" {
   token = var.linode_token
 }
 
-module "network" {
-  source = "./modules/network"
-  
-  cluster_name = var.cluster_name
-  region       = var.region
-}
-
 module "lke_cluster" {
   source = "./modules/lke-cluster"
+  
+  providers = {
+    linode = linode
+  }
   
   cluster_name       = var.cluster_name
   kubernetes_version = var.kubernetes_version
@@ -37,12 +34,15 @@ module "lke_cluster" {
   node_count         = var.node_count
   min_nodes          = var.min_nodes
   max_nodes          = var.max_nodes
-  vpc_id             = module.network.vpc_id
   tags               = var.tags
 }
 
 module "postgresql" {
   source = "./modules/postgresql"
+  
+  providers = {
+    linode = linode
+  }
   
   cluster_name = var.cluster_name
   region       = var.region

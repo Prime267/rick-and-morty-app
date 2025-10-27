@@ -4,9 +4,6 @@ resource "linode_lke_cluster" "rick_morty_cluster" {
   region      = var.region
   tags        = var.tags
 
-  # Using VPC
-  vpc_id = var.vpc_id
-
   # Pool for worker nodes
   pool {
     type  = var.node_type
