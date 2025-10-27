@@ -49,5 +49,5 @@ module "postgresql" {
   db_name      = var.db_name
   db_username  = var.db_username
   db_password  = var.db_password
-  allow_ips    = ["195.211.86.14/32"]  # Your home IP
+  allow_ips    = var.allow_ips  
 }

@@ -48,3 +48,7 @@ variable "db_password" {
   type        = string
   sensitive   = true
 }
+variable "allow_ips" {
+  description = "List of IPs allowed to access the database"
+  type        = list(string)
+}
