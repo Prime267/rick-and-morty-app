@@ -1,3 +1,15 @@
+terraform {
+  required_providers {
+    linode = {
+      source = "linode/linode"
+      version = "~> 2.0"
+    }
+  }
+}
+
+provider "linode" {
+  token = var.linode_token
+}
 
 module "network" {
   source = "./modules/network"
@@ -28,7 +40,7 @@ module "postgresql" {
   db_name      = var.db_name
   db_username  = var.db_username
   db_password  = var.db_password
-  allow_ips    = ["195.211.86.14/32"]  # Ваша домашня IP
+  allow_ips    = ["195.211.86.14/32"]  # Your home IP
 }
 
 module "kubernetes_resources" {
