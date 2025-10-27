@@ -1,8 +1,17 @@
 terraform {
   required_providers {
     linode = {
-      source = "linode/linode"
+      source  = "linode/linode"
       version = "~> 2.0"
+    }
+  }
+  
+  backend "remote" {
+    hostname     = "app.terraform.io"
+    organization = "akamai_rick_morty"
+    
+    workspaces {
+      name = "rick_morty_workspace"
     }
   }
 }
@@ -41,21 +50,4 @@ module "postgresql" {
   db_username  = var.db_username
   db_password  = var.db_password
   allow_ips    = ["195.211.86.14/32"]  # Your home IP
-}
-
-module "kubernetes_resources" {
-  source = "./modules/kubernetes-resources"
-  
-  cluster_name    = var.cluster_name
-  kubeconfig      = module.lke_cluster.kubeconfig
-  db_host         = module.postgresql.host
-  db_port         = module.postgresql.port
-  db_name         = module.postgresql.database
-  db_username     = module.postgresql.username
-  db_password     = module.postgresql.password
-  
-  depends_on = [
-    module.lke_cluster,
-    module.postgresql
-  ]
 }
