@@ -30,7 +30,14 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: DATABASE_URL
-              value: {{ .Values.database.url | quote }}
+            {{- if eq .Values.database.type "postgresql" }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "rick-and-morty-api.fullname" . }}-db-credentials
+                  key: database-url
+            {{- else }}
+              value: {{ .Values.database.sqliteUrl | quote }}
+            {{- end }}
           ports:
             - name: http
               containerPort: 8000

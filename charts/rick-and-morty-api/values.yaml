@@ -30,9 +30,14 @@ ingress:
 # Database configuration
 database:
   type: sqlite  # sqlite or postgresql
-  url: "sqlite:///./test.db"
-  # For PostgreSQL:
-  # url: "postgresql://user:password@postgresql:5432/rickmorty"
+  # SQLite settings
+  sqliteUrl: "sqlite:///./test.db"
+  # PostgreSQL settings
+  host: "a376784-akamai-prod-6781152-default.g2a.akamaidb.net"
+  port: 19867
+  name: "rickmorty"
+  username: "rickmorty"
+  password: ""
 
 # Horizontal Pod Autoscaler
 autoscaling:
