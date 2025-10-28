@@ -1,9 +1,10 @@
 # File: app/metrics_setup.py
 
-from prometheus_client import Gauge, Counter, Histogram, generate_latest, REGISTRY
+import time
+
+from prometheus_client import REGISTRY, Counter, Gauge, Histogram, generate_latest
 from starlette.requests import Request
 from starlette.responses import Response
-import time
 
 # --- 1. SRE METRICS DEFINITION ---
 # (Definitions remain the same)
