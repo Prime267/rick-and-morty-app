@@ -79,8 +79,7 @@ jobs:
           context: . 
           file: ./Dockerfile 
           push: true 
-          # --- FIX: Removed comments from multi-line tags ---
           tags: |
-            ${{ secrets.DOCKERHUB_USER }}/rick-morty-sre-app:latest
-            ${{ secrets.DOCKERHUB_USER }}/rick-morty-sre-app:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USER }}/rick-morty-app:latest
+            ${{ secrets.DOCKERHUB_USER }}/rick-morty-app:${{ github.sha }}
           platforms: linux/amd64 
