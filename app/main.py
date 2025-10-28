@@ -4,19 +4,50 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from tenacity import retry, stop_after_attempt, wait_exponential
-from sqlalchemy import or_  # CRITICAL: Add or_ for database filtering
+from sqlalchemy import or_
+from contextlib import asynccontextmanager # <-- NEW: for lifespan
 
-# Import necessary local modules with absolute imports
-from app import constants, database, metrics_setup 
-from app.database import Character  # CRITICAL: Import the Character model for ORM operations
+# --- NEW: Imports for Rate Limiting ---
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
-# --- 1. INITIALIZATION and SRE MIDDLEWARE ---
-app = FastAPI(title="Rick & Morty SRE App")
+# Import necessary local modules
+from app import constants, database, metrics_setup
+from app.database import Character
 
-# 1.1. SRE: Initialize Prometheus Metrics and Middleware
+# --- 1. LIFESPAN EVENT (Fixes DeprecationWarning) ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Code to run on application startup
+    print("--- Application starting up... ---")
+    database.init_db()
+    print("--- Database initialized ---")
+    
+    yield # Application runs here
+    
+    # Code to run on application shutdown (if needed)
+    print("--- Application shutting down... ---")
+
+
+# --- 2. INITIALIZATION and SRE MIDDLEWARE ---
+
+# --- NEW: Initialize Rate Limiter ---
+limiter = Limiter(key_func=get_remote_address)
+
+app = FastAPI(
+    title="Rick & Morty SRE App",
+    lifespan=lifespan  # <-- NEW: Modern way to handle startup/shutdown
+)
+
+# --- NEW: Register limiter with the app ---
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# 2.1. SRE: Initialize Prometheus Metrics and Middleware
 metrics_setup.setup_metrics(app)
 
-# Global Exception Handler (e.g., for unexpected 500 errors)
+# Global Exception Handler
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
     # CRITICAL: Increment the global 500 error counter for observability
@@ -26,86 +57,69 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         status_code=500
     ).inc()
     print(f"Unhandled error: {exc}")
-    # Return a 500 response
+    # Return a generic 500 response
     return JSONResponse(status_code=500, content={"message": "Internal Server Error"})
 
 
-# --- 2. SRE: DEEP HEALTH CHECK (Used by K8s Readiness Probe) ---
+# --- 3. SRE: DEEP HEALTH CHECK ---
 @app.get("/healthcheck")
 async def deep_health_check():
     """
     K8s Readiness Probe: Checks connectivity to critical dependencies (DB).
-    If the DB fails, the Readiness Probe should fail (returns 503).
+    If the DB fails (returns False), the 503 response will cause
+    K8s to stop sending traffic to this pod.
     """
     if not database.check_db_connection():
-        # Returns 503, preventing K8s from sending traffic to this Pod
-        # (This links directly to the K8s Probe configuration)
         raise HTTPException(status_code=503, detail="Database Connection Failed")
-
-    # If caching (Redis) was used, check its status here as well.
     return {"status": "OK", "db_status": "Healthy"}
 
 
-# --- 3. RESILIENCE: Retry Logic for External API ---
-
+# --- 4. RESILIENCE: Retry Logic ---
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=2, max=10))
 def resilient_request(url: str) -> dict:
-    """
-    Makes a GET request with retry logic for transient failures (429/5xx).
-    """
-    # Note: Filters are added here via constants
+    """Makes a GET request with retry logic for transient failures (429/5xx)."""
     response = requests.get(url, params=constants.EXTERNAL_FILTERS, timeout=10)
-
-    # If the external API hits a Rate Limit (429) or Server Error (5xx), we retry
+    
+    # Retry on 429 (Rate Limit) or 5xx (Server Error)
     if response.status_code >= 429:
-        # Tenacity will catch this Exception and automatically retry the attempt
-        # Create the error message first
         err_msg = f"External API failed with status {response.status_code}. Retrying..."
-        # Now raise the exception with the shorter variable name
         raise Exception(err_msg)
-
-    response.raise_for_status() # Raise exception for other non-retriable 4xx errors
+    
+    # Fail fast on other 4xx client errors
+    response.raise_for_status()
     return response.json()
 
 
-# --- 4. DATA INGESTION JOB (Logic covering Pagination and Persistence) ---
-
+# --- 5. DATA INGESTION JOB ---
 def ingest_all_characters(db: Session):
-    """
-    Collects all pages of filtered data from the external API and persists them.
-    Handles pagination gracefully.
-    """
+    """Collects all pages of filtered data from the external API and persists them."""
     next_url = constants.EXTERNAL_API_URL
     processed_count = 0
-
     while next_url:
         data = resilient_request(next_url)
-
-        # --- Minimal Filtering Logic (as per task requirements) ---
+        # Define Earth variants as per the task
         earth_origins = ["Earth (C-137)", "Earth (Replacement Dimension)"]
-
+        
         for char_data in data.get('results', []):
+            # Check for "Earth" in origin name
             is_earth = (char_data['origin']['name'].startswith('Earth') or
                         char_data['origin']['name'] in earth_origins)
-
-            # Persist data ONLY if it meets all the specific requirements
+            
+            # Persist only if all filters match
             if (char_data['species'] == constants.EXTERNAL_FILTERS['species'] and
                 char_data['status'] == constants.EXTERNAL_FILTERS['status'] and
                 is_earth):
-
-                # --- ORM Logic (Upsert) to save/update data in DB ---
                 
-                # 1. Check if the character already exists
+                # Use "Upsert" logic (Update or Insert)
                 existing_char = db.query(Character).filter(Character.id == char_data['id']).first()
-
                 if existing_char:
-                    # 2. Update existing character (minimal update logic)
+                    # Update
                     existing_char.name = char_data['name']
                     existing_char.status = char_data['status']
                     existing_char.origin_name = char_data['origin']['name']
                     existing_char.is_earth_origin = is_earth
                 else:
-                    # 3. Create a new character
+                    # Insert
                     new_char = Character(
                         id=char_data['id'],
                         name=char_data['name'],
@@ -115,75 +129,65 @@ def ingest_all_characters(db: Session):
                         is_earth_origin=is_earth
                     )
                     db.add(new_char)
-
-                # Commit changes for this character
-                db.commit()
+                
+                db.commit() # Commit per character (or batch)
                 processed_count += 1
-
-        next_url = data['info'].get('next')
-
-    # Update the business metric (critical for the Bonus section)
+                
+        next_url = data['info'].get('next') # Handle pagination
+        
+    # SRE Observability: Update the business metric
     metrics_setup.PROCESSED_CHARACTERS.set(processed_count)
-    
-    return processed_count  # Return count for API response
+    return processed_count
 
 
-# --- 5. MAIN API ENDPOINT (/characters) ---
-
+# --- 6. MAIN API ENDPOINT (/characters) ---
 @app.get("/api/v1/characters")
+@limiter.limit("20/minute")  # <-- NEW: Rate limit this endpoint
 async def get_characters(
+    request: Request,  # <-- NEW: 'request' is required for the limiter
     sort_by: str = Query(None, description="Sort by 'name' or 'id'"),
     db: Session = Depends(database.get_db)
 ):
-    # Error Handling for invalid requests (400 Bad Request)
+    """Serves the filtered list of characters from our local DB."""
+    
+    # 400 Error Handling for invalid parameters
     if sort_by and sort_by not in ["name", "id"]:
-        # Increment 400 error metric before raising exception
         metrics_setup.HTTP_ERRORS_TOTAL.labels(
             method="GET",
             endpoint="/api/v1/characters",
             status_code=400
         ).inc()
-        # Define the detail message separately
         detail_msg = "Invalid sort_by parameter. Use 'name' or 'id'."
-        # Raise the exception using the variable
         raise HTTPException(status_code=400, detail=detail_msg)
-
-    # --- Logic to read characters from DB with sorting ---
     
-    # Base query filters for Human, Alive, and Earth origin (using SRE efficiency flag)
+    # Query the DB using the pre-filtered, SRE-efficient flag
     query = db.query(Character).filter(
         Character.species == constants.EXTERNAL_FILTERS['species'],
         Character.status == constants.EXTERNAL_FILTERS['status'],
-        # Using the is_earth_origin flag for efficient filtering
         Character.is_earth_origin == True 
     )
-
-    # Apply sorting logic
+    
+    # Apply sorting
     if sort_by == 'name':
         query = query.order_by(Character.name)
     elif sort_by == 'id':
         query = query.order_by(Character.id)
-
+        
     characters = query.all()
-
-    # Return filtered and sorted data in JSON format
     return characters
 
 
-# --- 6. DATA SYNC ENDPOINT ---
+# --- 7. DATA SYNC ENDPOINT ---
 @app.post("/sync")
-async def sync_data(db: Session = Depends(database.get_db)):
-    """Sync data from Rick and Morty API to database"""
+@limiter.limit("5/minute")  # <-- NEW: Stricter rate limit for this heavy endpoint
+async def sync_data(
+    request: Request,  # <-- NEW: 'request' is required for the limiter
+    db: Session = Depends(database.get_db)
+):
+    """Triggers a manual data synchronization from the external API."""
     characters_count = ingest_all_characters(db)
     return {"message": f"Data synced successfully: {characters_count} characters processed"}
 
 
-# --- 7. STARTUP EVENT ---
-@app.on_event("startup")
-def startup_event():
-    # Initialize the database table structure
-    database.init_db()
-    # In a real environment, ingestion would run as a separate
-    # CronJob/Task or on a timer.
-    # For a simple demo, we could call ingest_all_characters here
-    # but it's risky for K8s startup time.
+# --- 8. STARTUP EVENT (REMOVED) ---
+# Old @app.on_event("startup") block is now handled by 'lifespan'
