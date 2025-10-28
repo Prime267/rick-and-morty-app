@@ -62,6 +62,29 @@ graph TD
     style I fill:#02b159,stroke:#333,stroke-width:2px
 ```
 
+### Pod Architecture Detail
+
+```mermaid
+graph TD
+    subgraph "Kubernetes Deployment (LKE)"
+        M(K8s Deployment) -- Creates --> N[Pods x N]
+        N -- Read Config --> K(K8s Secret)
+        
+        subgraph "Pod Details"
+            O[App Container] -- Shares Volume --> P[Log Sidecar]
+        end
+        
+        M -- Contains --> O
+        M -- Contains --> P
+        
+        Q(K8s Service ClusterIP) -- Directs Traffic To --> N
+        R(K8s Ingress) -- Routes To --> Q
+        M -- Creates --> S(K8s HPA)
+        
+        P -- Writes Logs To --> T>STDOUT]
+    end
+```
+
 ---
 
 ## ✨ SRE & DevOps Implementation Details
