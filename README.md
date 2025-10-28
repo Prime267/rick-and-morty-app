@@ -20,47 +20,47 @@ The solution follows a standard cloud-native pattern, emphasizing automation and
 
 ### Architecture Diagram (Mermaid)
 
-\`\`\`mermaid
+```mermaid
 graph TD
     subgraph "Development & CI/CD"
-        A[Developer] -- Git Push --> B(GitHub Repository);
-        B -- Triggers --> C{GitHub Actions CI/CD};
-        C -- 1. Lint --> D[Ruff Check];
-        C -- 2. Test --> E[Pytest Unit & Integration];
-        C -- 3. Build --> F[Docker Build];
-        C -- 4. Push --> G[(Docker Hub)];
+        A[Developer] -- Git Push --> B(GitHub Repository)
+        B -- Triggers --> C{GitHub Actions CI/CD}
+        C -- 1. Lint --> D[Ruff Check]
+        C -- 2. Test --> E[Pytest Unit & Integration]
+        C -- 3. Build --> F[Docker Build]
+        C -- 4. Push --> G[(Docker Hub)]
     end
 
     subgraph "Infrastructure (Linode Cloud)"
-        H{Terraform} -- Provisions --> I[Linode Kubernetes Engine];
-        H -- Provisions --> J[(Managed PostgreSQL DB)];
-        H -- Creates DB Credentials Secret --> K[K8s Secret];
+        H{Terraform} -- Provisions --> I[Linode Kubernetes Engine]
+        H -- Provisions --> J[(Managed PostgreSQL DB)]
+        H -- Creates DB Credentials Secret --> K(K8s Secret)
     end
 
     subgraph "Kubernetes Deployment (LKE)"
-        L{Helm} -- Deploys --> M[K8s Deployment];
-        M -- Creates --> N[Pods x N];
-        N -- Container Startup (Reads Env) --> K; 
-        M -- Contains --> O[App Container];
-        M -- Contains --> P[Log Sidecar];
-        M -- Creates --> Q[K8s Service ClusterIP];
-        M -- Creates --> R[K8s Ingress];
-        M -- Creates --> S[K8s HPA];
-        O -- Pulls Image --> G;
-        O -- Connects to --> J;
-        P -- Aggregates Logs --> T["STDOUT/External Aggregator"];
-        R -- Routes Traffic --> Q;
-        Q -- Load Balances --> N;
+        L{Helm} -- Deploys --> M(K8s Deployment)
+        M -- Creates --> N[Pods x N]
+        N -- Container Startup (Reads Env) --> K 
+        M -- Contains --> O[App Container]
+        M -- Contains --> P[Log Sidecar]
+        M -- Creates --> Q(K8s Service ClusterIP)
+        M -- Creates --> R(K8s Ingress)
+        M -- Creates --> S(K8s HPA)
+        O -- Pulls Image --> G
+        O -- Connects to --> J
+        P -- Logs --> T>STDOUT]
+        R -- Routes Traffic --> Q
+        Q -- Load Balances --> N
     end
 
-    U[End User] -- HTTPS --> R;
-    O -- Fetches Data --> V[(External Rick & Morty API)];
+    U[End User] -- HTTPS --> R
+    O -- Fetches Data --> V[(External Rick & Morty API)]
 
     style G fill:#0db7ed,stroke:#333,stroke-width:2px
     style J fill:#336791,stroke:#333,stroke-width:2px
     style V fill:#f9f,stroke:#333,stroke-width:2px
     style I fill:#02b159,stroke:#333,stroke-width:2px
-\`\`\`
+```
 
 ---
 
