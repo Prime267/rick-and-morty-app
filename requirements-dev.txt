@@ -1,7 +1,10 @@
-# 1. Include production dependencies from the app folder
--r app/requirements.txt
+# 1. Include production dependencies
+-r requirements.txt
 
 # 2. Add testing-specific dependencies
 pytest
 pytest-mock
 httpx
+
+# 3. Add linting/formatting dependencies
+ruff
