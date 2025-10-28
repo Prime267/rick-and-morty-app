@@ -114,3 +114,8 @@ secret-*.yaml
 node_modules/
 dist/
 build/
+# Python cache
+__pycache__/
+
+# Local database file
+test.db
