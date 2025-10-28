@@ -215,6 +215,57 @@ The app uses `sqlite:///./test.db` automatically if no `DATABASE_URL` is set.
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+## 🧪 Testing API Endpoints
+
+### Local Testing
+
+After running the application locally, you can test the endpoints:
+```bash
+# Initial health check
+curl http://localhost:8000/healthcheck
+# Expected: {"status":"OK","db_status":"Healthy"}
+
+# Sync data from Rick & Morty API
+curl -X POST http://localhost:8000/sync
+# Expected: {"message":"Data synced successfully: XX characters processed"}
+
+# Get all characters
+curl http://localhost:8000/api/v1/characters
+# Returns JSON array of character objects
+
+# Get characters sorted by name
+curl http://localhost:8000/api/v1/characters?sort_by=name
+
+# Check Prometheus metrics
+curl http://localhost:8000/metrics
+# Returns raw Prometheus metrics
+```
+
+### Production Testing
+
+After deployment to Kubernetes, test with the ingress IP or hostname:
+```bash
+# Get the ingress IP/hostname
+INGRESS_HOST=$(kubectl get ingress rick-morty-release -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+# Health check
+curl http://$INGRESS_HOST/healthcheck
+
+# Test character endpoint
+curl http://$INGRESS_HOST/api/v1/characters?sort_by=name
+
+# Test rate limiting (will return 429 after exceeding limits)
+for i in {1..6}; do 
+  curl -X POST http://$INGRESS_HOST/sync
+  echo "Request $i completed"
+  sleep 1
+done
+```
+
+> **Note**: As per the SRE assignment requirements, rate limiting is implemented to ensure resource protection:
+> - `/sync` endpoint is limited to **5 requests per minute** (due to resource intensity)
+> - `/api/v1/characters` endpoint is limited to **20 requests per minute**
+
 Access docs at [http://localhost:8000/docs](http://localhost:8000/docs).
 
 ## ☁️ Infrastructure Deployment (Terraform & Helm)
