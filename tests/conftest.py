@@ -1,12 +1,12 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import os
 
 # 1. Import the *modules* themselves so we can patch them
-from app import database
-from app import main
+from app import database, main
 
 # 2. Define Test DB URL
 # IMPORTANT: Override the production DATABASE_URL env var just in case
@@ -58,9 +58,9 @@ def client():
 
     # Create all tables on the *test* engine
     Base.metadata.create_all(bind=test_engine)
-    
+
     with TestClient(app) as test_client:
         yield test_client # The test runs here
-    
+
     # Drop all tables from the *test* engine
     Base.metadata.drop_all(bind=test_engine)

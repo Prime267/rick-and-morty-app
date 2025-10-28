@@ -1,6 +1,7 @@
 from sqlalchemy import Boolean, Column, Integer, String, create_engine, text
+
 # --- FIX: Import 'declarative_base' from 'sqlalchemy.orm' ---
-from sqlalchemy.orm import declarative_base, Session, sessionmaker
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 # Load constants
 from app.constants import DATABASE_URL
@@ -27,7 +28,9 @@ class Character(Base):
     species = Column(String)
     status = Column(String)
     origin_name = Column(String)
-    is_earth_origin = Column(Boolean) # Flag to simplify filtering logic (SRE efficiency)
+    is_earth_origin = Column(
+        Boolean
+    ) # Flag to simplify filtering logic (SRE efficiency)
 
 
 # --- 3. SRE HELPER FUNCTIONS ---
