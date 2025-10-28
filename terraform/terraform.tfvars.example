@@ -1,0 +1,13 @@
+# Copy this file to terraform.tfvars and change the values
+linode_token       = "your-linode-api-token"
+cluster_name       = "rick-morty"
+kubernetes_version = "1.27"
+region             = "eu-central"
+node_type          = "g6-standard-2"  # 2 CPU, 4GB RAM
+node_count         = 2
+min_nodes          = 1
+max_nodes          = 3
+tags               = ["production", "rick-morty-api"]
+db_name            = "rickmorty"
+db_username        = "rickmorty"
+db_password        = "your-secure-password"
