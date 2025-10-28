@@ -1,12 +1,12 @@
 from sqlalchemy import Boolean, Column, Integer, String, create_engine, text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker
+# --- FIX: Import 'declarative_base' from 'sqlalchemy.orm' ---
+from sqlalchemy.orm import declarative_base, Session, sessionmaker
 
-# Load constants (assuming constants.py is created in the root or accessible)
+# Load constants
 from app.constants import DATABASE_URL
 
 # --- 1. BASE DECLARATION AND ENGINE SETUP ---
-Base = declarative_base()
+Base = declarative_base() # Now uses the correct ORM import
 
 # The engine manages connections to the database.
 engine = create_engine(DATABASE_URL)
@@ -27,7 +27,7 @@ class Character(Base):
     species = Column(String)
     status = Column(String)
     origin_name = Column(String)
-    is_earth_origin = Column(Boolean) # Flag to simplify filtring logic (SRE efficiency)
+    is_earth_origin = Column(Boolean) # Flag to simplify filtering logic (SRE efficiency)
 
 
 # --- 3. SRE HELPER FUNCTIONS ---
@@ -45,6 +45,7 @@ def check_db_connection() -> bool:
         db.close()
         return True
     except Exception as e:
+        # Log the failure, this is important for debugging
         print(f"Database connection check failed: {e}")
         return False
 
