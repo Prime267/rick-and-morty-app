@@ -29,14 +29,12 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: DATABASE_URL
             {{- if eq .Values.database.type "postgresql" }}
+            - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: rickmorty-db-creds # FIX: Using fixed name created by Terraform
+                  name: {{ .Values.database.secretName }}
                   key: database-url
-            {{- else }}
-              value: {{ .Values.database.sqliteUrl | quote }}
             {{- end }}
           ports:
             - name: http

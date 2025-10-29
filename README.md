@@ -168,6 +168,23 @@ The application includes multiple reliability features:
        print("WARNING: DATABASE_URL not set. Falling back to local 'sqlite:///./test.db'")
        DATABASE_URL = "sqlite:///./test.db"
 ```
+#### 🛡️ Failover test results
+```bash
+➜  rick-and-morty-app git:(feat/check-failover) ✗ kubectl logs rick-morty-dev-rick-and-morty-api-5d46bc47b4-mdfhd -n rick-morty-ns
+Defaulted container "rick-and-morty-api" out of: rick-and-morty-api, logging-sidecar
+**WARNING: DATABASE_URL not set. Falling back to local 'sqlite:///./test.db'**
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+--- Application starting up... ---
+--- Database initialized ---
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     172.104.134.228:42284 - "GET /healthcheck HTTP/1.1" 200 OK
+INFO:     172.104.134.228:42298 - "GET /healthcheck HTTP/1.1" 200 OK
+INFO:     172.104.134.228:35346 - "GET /healthcheck HTTP/1.1" 200 OK
+INFO:     172.104.134.228:35360 - "GET /healthcheck HTTP/1.1" 200 OK
+INFO:     172.104.134.228:50384 - "GET /healthcheck HTTP/1.1" 200 OK
+```
 
 2. **External API Resilience**:
 ```python
@@ -296,9 +313,11 @@ Access docs at [http://localhost:8000/docs](http://localhost:8000/docs).
 
    # Deploy the application
    cd charts/rick-and-morty-api 
-   helm upgrade --install rick-morty-release . -n rick-morty-ns  
+   helm upgrade --install rick-morty-release . -n rick-morty-ns 
+   OR
+   helm upgrade --install rick-morty-sqlite . -n rick-morty-ns --set database.type=sqlite
 ```
-**Note:** The application requires Kubernetes node IP addresses to be whitelisted in the database. Future improvement: automate this step with Terraform or a CI/CD pipeline.
+**Note:** In case with real DB the application requires Kubernetes node IP addresses to be whitelisted in the database. Future improvement: automate this step with Terraform or a CI/CD pipeline.
 
 3. **Verify Deployment:**
 ```bash
