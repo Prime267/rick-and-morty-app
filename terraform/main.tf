@@ -21,7 +21,6 @@ provider "linode" {
 }
 
 provider "kubernetes" {
-  # Використання готового шляху до файлу конфігурації
   config_path = module.lke_cluster.kubeconfig_path
 }
 
