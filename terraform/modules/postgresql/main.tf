@@ -6,4 +6,5 @@ resource "linode_database_postgresql_v2" "rick_morty_db" {
   
   # Access configuration - your IP address
   allow_list = var.allow_ips
+
 }

@@ -8,13 +8,25 @@ metadata:
 data:
   fluent-bit.conf: |
     [SERVICE]
-        Flush        5
-        Daemon       Off
-        Log_Level    info
+        Flush          5
+        Log_Level      info
+        Daemon         off
+        Parsers_File   parsers.conf
 
-    # Application log input
-    {{ .Values.logging.config.inputs | indent 4 }}
+    [INPUT]
+        Name           tail
+        Path           /var/log/app/*.log
+        Parser         json
+        Tag            app.*
 
-    # Output configurations
-    {{ .Values.logging.config.outputs | indent 4 }}
+    [OUTPUT]
+        Name           stdout
+        Match          *
+  parsers.conf: |
+    [PARSER]
+        Name           json
+        Format         json
+        Time_Key       time
+        Time_Format    %Y-%m-%dT%H:%M:%S.%L
+        Time_Keep      On
 {{- end }}

@@ -18,12 +18,6 @@ variable "db_username" {
   type        = string
 }
 
-variable "db_password" {
-  description = "PostgreSQL password"
-  type        = string
-  sensitive   = true
-}
-
 variable "allow_ips" {
   description = "List of IPs allowed to connect to the database"
   type        = list(string)

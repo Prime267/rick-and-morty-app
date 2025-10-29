@@ -43,16 +43,14 @@ module "lke_cluster" {
 
 module "postgresql" {
   source = "./modules/postgresql"
-  
   providers = {
     linode = linode
   }
-  
+
   cluster_name = var.cluster_name
   region       = var.region
   db_name      = var.db_name
   db_username  = var.db_username
-  db_password  = var.db_password
   allow_ips    = var.allow_ips  
 }
 
@@ -75,9 +73,7 @@ resource "kubernetes_secret" "db_credentials" {
   type = "Opaque"
 
   data = {
-    database-url = base64encode(
-      "postgresql://${module.postgresql.username}:${module.postgresql.password}@${module.postgresql.host}:${module.postgresql.port}/${module.postgresql.database}"
-    )
+    database-url = "postgresql://${module.postgresql.username}:${module.postgresql.password}@${module.postgresql.host}:${module.postgresql.port}/${module.postgresql.database}"
   }
   
   depends_on = [
