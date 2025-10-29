@@ -35,6 +35,7 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.database.secretName }}
                   key: database-url
+                  optional: true
             {{- end }}
           ports:
             - name: http
