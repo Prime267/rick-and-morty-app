@@ -21,8 +21,12 @@ ingress:
 
 # Database configuration (CLEANED)
 database:
+# "postgresql" -> use K8s secret
+# "sqlite" -> DO NOT set env var, let Python choose fallback
   type: postgresql
-  sqliteUrl: "sqlite:///./test.db"
+  
+# The name of the secret that Terraform created
+  secretName: "rickmorty-db-creds"
 
 # Horizontal Pod Autoscaler
 autoscaling:
@@ -49,7 +53,6 @@ logging:
     tag: latest
     pullPolicy: IfNotPresent
   
-  # --- THIS BLOCK IS NEW ---
   # Configuration for the fluent-bit.conf ConfigMap
   config:
     inputs: |
