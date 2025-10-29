@@ -296,8 +296,9 @@ Access docs at [http://localhost:8000/docs](http://localhost:8000/docs).
 
    # Deploy the application
    cd charts/rick-and-morty-api 
-   helm upgrade --install rick-morty-release . --namespace default -f values.yaml
+   helm upgrade --install rick-morty-release . -n rick-morty-ns  
 ```
+**Note:** The application requires Kubernetes node IP addresses to be whitelisted in the database. Future improvement: automate this step with Terraform or a CI/CD pipeline.
 
 3. **Verify Deployment:**
 ```bash
