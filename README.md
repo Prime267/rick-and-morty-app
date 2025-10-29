@@ -59,26 +59,36 @@ graph TD
     style I fill:#02b159,stroke:#333,stroke-width:2px
 ```
 
-### Pod Architecture Detail
+### Helm Deployment Architecture Detail
 ```mermaid
-graph TD
-    subgraph "Kubernetes Deployment (LKE)"
-        M(K8s Deployment) -- Creates --> N[Pods x N]
-        N -- Read Config --> K(K8s Secret)
-        
-        subgraph "Pod Details"
-            O[App Container] -- Shares Volume --> P[Log Sidecar]
+graph LR
+    subgraph "Kubernetes Cluster (LKE)"
+        A[Helm Chart] --> B(K8s Deployment);
+        A --> C(K8s Service ClusterIP);
+        A --> D(K8s Ingress);
+        A --> E(K8s HPA);
+        A --> F(K8s ConfigMap);
+
+        subgraph "App Deployment"
+            B -- Creates --> G[Pods x N];
+            G -- Reads Config From --> F;
+            
+            subgraph "App Pod"
+                H[App Container] -- "Env Var (DATABASE_URL)" --> I(K8s Secret);
+                H -- Exposes --> L(["/metrics (Prometheus)"]);
+                J[Log Sidecar] -- Logs --> K(STDOUT);
+            end
         end
-        
-        M -- Contains --> O
-        M -- Contains --> P
-        
-        Q(K8s Service ClusterIP) -- Directs Traffic To --> N
-        R(K8s Ingress) -- Routes To --> Q
-        M -- Creates --> S(K8s HPA)
-        
-        P -- Writes Logs To --> T>STDOUT]
+
+        I[K8s Secret] -- "Created by Terraform (DB Credentials)" --> .
+        E -- Scales Pods Based On --> G;
+        D -- Routes Traffic To --> C;
+        C -- Directs Traffic To --> G;
     end
+    
+    style A fill:#B5EAD7,stroke:#00A170
+    style I fill:#FFD700,color:#000,stroke:#333
+    style L fill:#FFE0B2,color:#000,stroke:#FB8C00
 ```
 
 ## 📊 Core Technologies & Libraries
