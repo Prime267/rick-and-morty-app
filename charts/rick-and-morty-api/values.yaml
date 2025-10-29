@@ -2,16 +2,9 @@
 replicaCount: 1
 
 image:
-  repository: rick-and-morty-app
+  repository: deodatus0101/rick-morty-app
   tag: latest
   pullPolicy: IfNotPresent
-
-nameOverride: ""
-fullnameOverride: ""
-
-serviceAccount:
-  create: true
-  name: ""
 
 service:
   type: ClusterIP
@@ -25,19 +18,12 @@ ingress:
       paths:
         - path: /
           pathType: Prefix
-  tls: []
 
-# Database configuration
+# Database configuration (CLEANED)
 database:
-  type: sqlite  # sqlite or postgresql
-  # SQLite settings
+  type: postgresql
+  # Helm тепер очікує K8s Secret 'rickmorty-db-creds', створений Terraform.
   sqliteUrl: "sqlite:///./test.db"
-  # PostgreSQL settings
-  host: "a376784-akamai-prod-6781152-default.g2a.akamaidb.net"
-  port: 19867
-  name: "rickmorty"
-  username: "rickmorty"
-  password: ""
 
 # Horizontal Pod Autoscaler
 autoscaling:
@@ -61,26 +47,5 @@ logging:
   enabled: true
   image:
     repository: fluent/fluent-bit
-    tag: "1.9"
+    tag: latest
     pullPolicy: IfNotPresent
-  config:
-    outputs: |
-      [OUTPUT]
-        Name stdout
-        Match *
-    inputs: |
-      [INPUT]
-        Name tail
-        Path /var/log/app/*.log
-        Parser docker
-        Tag app.*
-
-# Security context
-securityContext:
-  runAsNonRoot: true
-  runAsUser: 1000
-  runAsGroup: 1000
-
-# Pod security context
-podSecurityContext:
-  fsGroup: 1000

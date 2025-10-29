@@ -52,3 +52,10 @@ variable "allow_ips" {
   description = "List of IPs allowed to access the database"
   type        = list(string)
 }
+
+# Application Namespace
+variable "app_namespace" {
+  description = "The Kubernetes namespace where the application components will be deployed."
+  type        = string
+  default     = "rick-morty-ns"
+}
