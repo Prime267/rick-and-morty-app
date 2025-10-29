@@ -22,7 +22,6 @@ ingress:
 # Database configuration (CLEANED)
 database:
   type: postgresql
-  # Helm тепер очікує K8s Secret 'rickmorty-db-creds', створений Terraform.
   sqliteUrl: "sqlite:///./test.db"
 
 # Horizontal Pod Autoscaler
