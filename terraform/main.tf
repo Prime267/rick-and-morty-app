@@ -21,10 +21,8 @@ provider "linode" {
 }
 
 provider "kubernetes" {
-  host                   = module.lke_cluster.host
-  client_certificate     = module.lke_cluster.client_certificate
-  client_key             = module.lke_cluster.client_key
-  cluster_ca_certificate = module.lke_cluster.cluster_ca_certificate
+  # Використання готового шляху до файлу конфігурації
+  config_path = module.lke_cluster.kubeconfig_path
 }
 
 module "lke_cluster" {
