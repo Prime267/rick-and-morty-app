@@ -16,7 +16,7 @@ The solution follows a standard cloud-native pattern, emphasizing automation and
 * **Deployment:** Containerized using an optimized multi-stage **Dockerfile** and deployed via **Helm** chart.
 * **CI/CD:** **GitHub Actions** workflow for automated testing, building, and publishing the Docker image.
 
-### Architecture Diagram (Mermaid)
+### Architecture Diagram
 ```mermaid
 graph TD
     subgraph "Development & CI/CD"
@@ -35,28 +35,22 @@ graph TD
     end
 
     subgraph "Kubernetes Deployment (LKE)"
-        L{Helm} -- Deploys --> M(K8s Deployment)
-        M -- Creates --> N[Pods x N]
-        N -- Container Startup (Reads Env) --> K 
-        M -- Contains --> O[App Container]
-        M -- Contains --> P[Log Sidecar]
-        M -- Creates --> Q(K8s Service ClusterIP)
-        M -- Creates --> R(K8s Ingress)
-        M -- Creates --> S(K8s HPA)
-        O -- Pulls Image --> G
-        O -- Connects to --> J
-        P -- Logs --> T>STDOUT]
-        R -- Routes Traffic --> Q
-        Q -- Load Balances --> N
+        %% Helm тепер є "актором", що деплоїть ОДНУ сутність
+        L{Helm} -- Deploys --> APP_SYSTEM["Rick & Morty App<br>(Details in LLD)"]
+        
+        APP_SYSTEM -- Reads Secret --> K
+        APP_SYSTEM -- Pulls Image from --> G
+        APP_SYSTEM -- Connects to --> J
     end
 
-    U[End User] -- HTTPS --> R
-    O -- Fetches Data --> V[(External Rick & Morty API)]
+    U[End User] -- HTTPS --> APP_SYSTEM
+    APP_SYSTEM -- Fetches Data --> V[(External Rick & Morty API)]
 
     style G fill:#0db7ed,stroke:#333,stroke-width:2px
     style J fill:#336791,stroke:#333,stroke-width:2px
     style V fill:#f9f,stroke:#333,stroke-width:2px
     style I fill:#02b159,stroke:#333,stroke-width:2px
+    style APP_SYSTEM fill:#B5EAD7,stroke:#00A170,stroke-width:2px
 ```
 
 ### Helm Deployment Architecture Detail
