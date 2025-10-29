@@ -33,3 +33,27 @@ output "kubeconfig_path" {
 #     ]
 #   ])
 # }
+
+output "host" {
+  description = "The K8s cluster host"
+  value       = linode_lke_cluster.rick_morty_cluster.host
+  sensitive   = true
+}
+
+output "client_certificate" {
+  description = "The K8s cluster client certificate"
+  value       = base64decode(linode_lke_cluster.rick_morty_cluster.client_certificate)
+  sensitive   = true
+}
+
+output "client_key" {
+  description = "The K8s cluster client key"
+  value       = base64decode(linode_lke_cluster.rick_morty_cluster.client_key)
+  sensitive   = true
+}
+
+output "cluster_ca_certificate" {
+  description = "The K8s cluster CA certificate"
+  value       = base64decode(linode_lke_cluster.rick_morty_cluster.cluster_ca_certificate)
+  sensitive   = true
+}
