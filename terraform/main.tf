@@ -21,10 +21,7 @@ provider "linode" {
 }
 
 provider "kubernetes" {
-  host                   = module.lke_cluster.kubeconfig.0.host
-  client_certificate     = base64decode(module.lke_cluster.kubeconfig.0.client_certificate)
-  client_key             = base64decode(module.lke_cluster.kubeconfig.0.client_key)
-  cluster_ca_certificate = base64decode(module.lke_cluster.kubeconfig.0.cluster_ca_certificate)
+  config_path = module.lke_cluster.kubeconfig_path
 }
 
 module "lke_cluster" {
