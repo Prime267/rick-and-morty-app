@@ -18,13 +18,3 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     print("WARNING: DATABASE_URL not set. Falling back to local 'sqlite:///./test.db'")
     DATABASE_URL = "sqlite:///./test.db"
-
-# --- Стара логіка PostgreSQL (тепер непотрібна як фолбек) ---
-# if not DATABASE_URL:
-
-#     DB_USER = os.getenv("DB_USER", "user")
-#     DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
-#     DB_HOST = os.getenv("DB_HOST", "localhost")
-#     DB_NAME = os.getenv("DB_NAME", "rickandmorty")
-
-#     DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"

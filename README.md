@@ -35,7 +35,6 @@ graph TD
     end
 
     subgraph "Kubernetes Deployment (LKE)"
-        %% Helm тепер є "актором", що деплоїть ОДНУ сутність
         L{Helm} -- Deploys --> APP_SYSTEM["Rick & Morty App<br>(Details in LLD)"]
         
         APP_SYSTEM -- Reads Secret --> K
