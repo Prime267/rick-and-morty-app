@@ -264,26 +264,51 @@ curl http://localhost:8000/metrics
 ### Production Testing
 
 ```bash
-# 1. Set your app's hostname (must match values.yaml)
+# 1. Set the application's hostname (must match Ingress rule in values.yaml)
 export INGRESS_HOST_NAME="rickandmorty.local"
 
 # 2. Get the Ingress Controller's external IP
 export INGRESS_HOST_IP=$(kubectl get service ingress-nginx-controller \
   -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-echo "--- Testing Rate Limit (Expecting 200, 200, 200, 200, 200, 429) ---"
+echo "--- Production API Testing via Ingress ---"
 echo "Host: $INGRESS_HOST_NAME @ $INGRESS_HOST_IP"
 
-# Test rate limiting (5/minute limit on /sync endpoint)
+# Test 1: Health Check (/healthcheck)
+# Expects: 200 OK (if DB is running)
+echo -e "\n[1] Health Check Status (Expect 200):"
+curl -s -o /dev/null -w "%{http_code}" \
+  -H "Host: $INGRESS_HOST_NAME" \
+  http://$INGRESS_HOST_IP/healthcheck
+echo ""
+
+# Test 2: Data Synchronization (/sync)
+# Expects: 200 OK and a success message (runs the data ingestion job)
+echo -e "\n[2] Data Sync (POST /sync) - Detailed Output:"
+curl -X POST -H "Host: $INGRESS_HOST_NAME" \
+  http://$INGRESS_HOST_IP/sync
+echo ""
+
+# Test 3: Character Retrieval with Sorting (/api/v1/characters?sort_by=name)
+# Expects: 200 OK and a JSON array of characters, sorted by name
+echo -e "\n\n[3] Character Retrieval & Sorting Status (Expect 200, JSON omitted):"
+curl -s -o /dev/null -w "%{http_code}" \
+  -H "Host: $INGRESS_HOST_NAME" \
+  http://$INGRESS_HOST_IP/api/v1/characters?sort_by=name
+echo ""
+
+# Test 4: Rate Limiting on /sync (5/minute limit)
+# Expects: 5 successful requests (200), followed by 429 Too Many Requests
+echo -e "\n[4] Rate Limit Test (5/minute limit on /sync):"
 for i in {1..6}; do 
-  echo -n "Request $i status: "
+  echo -n "  Request $i status: "
   # -s: silent, -o /dev/null: discard body, -w "%{http_code}": write status code
   curl -s -o /dev/null -w "%{http_code}" \
     -X POST \
     -H "Host: $INGRESS_HOST_NAME" \
     http://$INGRESS_HOST_IP/sync
   echo ""
-  sleep 0.5 # Wait slightly to mimic rapid firing
+  sleep 0.5 # Pause to simulate quick bursts
 done
 ```
 
