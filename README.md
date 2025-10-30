@@ -263,22 +263,25 @@ curl http://localhost:8000/metrics
 
 ### Production Testing
 
-After deployment to Kubernetes, test with the ingress IP or hostname:
 ```bash
-# Get the ingress IP/hostname
-INGRESS_HOST=$(kubectl get ingress rick-morty-release -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+# 1. Set your app's hostname (must match values.yaml)
+export INGRESS_HOST_NAME="rickandmorty.local"
 
-# Health check
-curl http://$INGRESS_HOST/healthcheck
+# 2. Get the Ingress Controller's external IP
+export INGRESS_HOST_IP=$(kubectl get service ingress-nginx-controller \
+  -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+# Health check (Must pass the -H "Host: ..." header)
+curl -H "Host: $INGRESS_HOST_NAME" http://$INGRESS_HOST_IP/healthcheck
 
 # Test character endpoint
-curl http://$INGRESS_HOST/api/v1/characters?sort_by=name
+curl -H "Host: $INGRESS_HOST_NAME" http://$INGRESS_HOST_IP/api/v1/characters?sort_by=name
 
 # Test rate limiting (will return 429 after exceeding limits)
 for i in {1..6}; do 
-  curl -X POST http://$INGRESS_HOST/sync
+  curl -X POST -H "Host: $INGRESS_HOST_NAME" http://$INGRESS_HOST_IP/sync
   echo "Request $i completed"
-  sleep 1
+  sleep 0.5
 done
 ```
 
