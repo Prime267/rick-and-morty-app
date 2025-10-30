@@ -271,17 +271,19 @@ export INGRESS_HOST_NAME="rickandmorty.local"
 export INGRESS_HOST_IP=$(kubectl get service ingress-nginx-controller \
   -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-# Health check (Must pass the -H "Host: ..." header)
-curl -H "Host: $INGRESS_HOST_NAME" http://$INGRESS_HOST_IP/healthcheck
+echo "--- Testing Rate Limit (Expecting 200, 200, 200, 200, 200, 429) ---"
+echo "Host: $INGRESS_HOST_NAME @ $INGRESS_HOST_IP"
 
-# Test character endpoint
-curl -H "Host: $INGRESS_HOST_NAME" http://$INGRESS_HOST_IP/api/v1/characters?sort_by=name
-
-# Test rate limiting (will return 429 after exceeding limits)
+# Test rate limiting (5/minute limit on /sync endpoint)
 for i in {1..6}; do 
-  curl -X POST -H "Host: $INGRESS_HOST_NAME" http://$INGRESS_HOST_IP/sync
-  echo "Request $i completed"
-  sleep 0.5
+  echo -n "Request $i status: "
+  # -s: silent, -o /dev/null: discard body, -w "%{http_code}": write status code
+  curl -s -o /dev/null -w "%{http_code}" \
+    -X POST \
+    -H "Host: $INGRESS_HOST_NAME" \
+    http://$INGRESS_HOST_IP/sync
+  echo ""
+  sleep 0.5 # Wait slightly to mimic rapid firing
 done
 ```
 
