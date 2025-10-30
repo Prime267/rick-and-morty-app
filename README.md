@@ -261,6 +261,45 @@ curl http://localhost:8000/metrics
 # Returns raw Prometheus metrics
 ```
 
+> **Note**: As per the SRE assignment requirements, rate limiting is implemented to ensure resource protection:
+> - `/sync` endpoint is limited to **5 requests per minute** (due to resource intensity)
+> - `/api/v1/characters` endpoint is limited to **20 requests per minute**
+
+Access docs at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+## ☁️ Infrastructure Deployment (Terraform & Helm)
+
+### Terraform (IaC)
+1. **Configure Credentials:** 
+   Ensure your `linode_token` and `db_password` are set securely (e.g., in Terraform Cloud or a local `terraform.tfvars`).
+
+2. **Initialize and Provision:**
+```bash
+   cd terraform
+   terraform init
+   terraform apply
+```
+   This creates the LKE cluster, PostgreSQL database, and necessary Kubernetes Secret.
+
+### Helm Deployment (CD)
+1. **Configure Environment:** 
+   The Deployment template is configured to read `DATABASE_URL` from the K8s Secret named `rickmorty-db-creds`.
+   But, its optional, so in case if secret doesn`t exist, app will use SQLite.
+
+2. **Deploy:**
+```bash
+   # Set KUBECONFIG
+   export KUBECONFIG=$(terraform output -raw kubeconfig_path)
+
+   # Deploy the application
+   cd charts/rick-and-morty-api 
+   helm upgrade --install rick-morty-release . -n rick-morty-ns 
+   OR
+   helm upgrade --install rick-morty-sqlite . -n rick-morty-ns --set database.type=sqlite
+```
+**Note:** In case with real DB the application requires Kubernetes node IP addresses to be whitelisted in the database. Future improvement: automate this step with Terraform or a CI/CD pipeline.
+
+3. **Verify Deployment:**
 ### Production Testing
 
 ```bash
@@ -311,64 +350,6 @@ for i in {1..6}; do
   sleep 0.5 # Pause to simulate quick bursts
 done
 ```
-
-> **Note**: As per the SRE assignment requirements, rate limiting is implemented to ensure resource protection:
-> - `/sync` endpoint is limited to **5 requests per minute** (due to resource intensity)
-> - `/api/v1/characters` endpoint is limited to **20 requests per minute**
-
-Access docs at [http://localhost:8000/docs](http://localhost:8000/docs).
-
-## ☁️ Infrastructure Deployment (Terraform & Helm)
-
-### Terraform (IaC)
-1. **Configure Credentials:** 
-   Ensure your `linode_token` and `db_password` are set securely (e.g., in Terraform Cloud or a local `terraform.tfvars`).
-
-2. **Initialize and Provision:**
-```bash
-   cd terraform
-   terraform init
-   terraform apply
-```
-   This creates the LKE cluster, PostgreSQL database, and necessary Kubernetes Secret.
-
-### Helm Deployment (CD)
-1. **Configure Environment:** 
-   The Deployment template is configured to read `DATABASE_URL` from the K8s Secret named `rickmorty-db-creds`.
-
-2. **Deploy:**
-```bash
-   # Set KUBECONFIG
-   export KUBECONFIG=$(terraform output -raw kubeconfig_path)
-
-   # Deploy the application
-   cd charts/rick-and-morty-api 
-   helm upgrade --install rick-morty-release . -n rick-morty-ns 
-   OR
-   helm upgrade --install rick-morty-sqlite . -n rick-morty-ns --set database.type=sqlite
-```
-**Note:** In case with real DB the application requires Kubernetes node IP addresses to be whitelisted in the database. Future improvement: automate this step with Terraform or a CI/CD pipeline.
-
-3. **Verify Deployment:**
-```bash
-   # Check if pods are running
-   kubectl get pods
-
-   # Verify the ingress is correctly configured
-   kubectl get ingress
-
-   # Test the API endpoint
-   curl http://<ingress-ip>/healthcheck
-```
-
-## 🔧 Advanced Configuration
-
-The application can be configured via environment variables:
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `DATABASE_URL` | Connection string for PostgreSQL | Falls back to SQLite |
-| `LOG_LEVEL` | Logging verbosity | `"INFO"` |
 
 ## 📚 API Documentation
 
