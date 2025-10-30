@@ -36,11 +36,6 @@ output "kubeconfig" {
   description = "Kubeconfig for the Kubernetes cluster (base64 encoded)"
 }
 
-output "db_host" {
-  value       = module.postgresql.host
-  description = "PostgreSQL database host"
-}
-
 output "db_port" {
   value       = module.postgresql.port
   description = "PostgreSQL database port"
